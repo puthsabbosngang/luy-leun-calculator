@@ -1,9 +1,10 @@
 "use client"
 
+import Image from "next/image"
 import { Header } from "@/src/components/header"
 import { useTranslation } from "@/src/contexts/translation-context" 
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
-import { Smartphone, Download } from "lucide-react"
+import { Smartphone } from "lucide-react"
 
 export default function Home() {
   const { t, language } = useTranslation()
@@ -13,7 +14,7 @@ export default function Home() {
       <Header />
       <div className="pt-30 min-h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-900 p-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="p-8">
+          <div className="p-8 mt-0">
             <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
               {t('page.wellcome')}
             </h1>
@@ -24,59 +25,31 @@ export default function Home() {
               {t('page.description')}
             </p>
             
-            {/* App Download Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10 max-w-2xl mx-auto">
-              {/* Play Store Card */}
-              <Card 
-                className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transition-all duration-300 cursor-pointer transform hover:scale-105 shadow-lg hover:shadow-xl" 
-                onClick={() => window.open('https://play.google.com/store', '_blank')}
-              >
-                <CardContent className="p-6 text-center text-white">
-                  <div className="flex flex-col items-center space-y-3">
-                    <div className="bg-white/20 p-3 rounded-full">
-                      <Smartphone className="h-8 w-8" />
-                    </div>
-                    <h3 className="text-xl font-bold">
-                      {language === 'km' ? 'ទាញយក Android' : 'Download for Android'}
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      {language === 'km' ? 'ពី Google Play Store' : 'Get it on Google Play'}
-                    </p>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Download className="h-4 w-4" />
-                      <span className="text-sm font-medium">
-                        {language === 'km' ? 'ទាញយកឥឡូវ' : 'Download Now'}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <h2 className="text-2xl font-semibold text-gray-600 dark:text-gray-400 mb-6  mt-10">
+              {t('page.downloadApp')}
+            </h2>
 
-              {/* App Store Card */}
-              <Card 
-                className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all duration-300 cursor-pointer transform hover:scale-105 shadow-lg hover:shadow-xl" 
-                onClick={() => window.open('https://apps.apple.com', '_blank')}
-              >
-                <CardContent className="p-6 text-center text-white">
-                  <div className="flex flex-col items-center space-y-3">
-                    <div className="bg-white/20 p-3 rounded-full">
-                      <Smartphone className="h-8 w-8" />
-                    </div>
-                    <h3 className="text-xl font-bold">
-                      {language === 'km' ? 'ទាញយក iOS' : 'Download for iOS'}
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      {language === 'km' ? 'ពី Apple App Store' : 'Download on the App Store'}
-                    </p>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Download className="h-4 w-4" />
-                      <span className="text-sm font-medium">
-                        {language === 'km' ? 'ទាញយកឥឡូវ' : 'Download Now'}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* App Download */}
+            <div className="grid grid-cols-1 sm:grid-cols-2  mb-10 max-w-md mx-auto gap-4 mb-10">
+              {/* Play Store */}
+              <Image 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/1200px-Google_Play_Store_badge_EN.svg.png" 
+                alt={language === 'km' ? 'ទាញយក Android' : 'Download for Android'}
+                width={150}
+                height={40}
+                className="w-auto h-12 mx-auto hover:scale-105 transition-all duration-300 cursor-pointer"
+                onClick={() => window.open('https://play.google.com/store/search?q=luy+leun&c=apps', '_blank')}
+              />
+              
+              {/* App Store */}
+              <Image 
+                src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" 
+                alt={language === 'km' ? 'ទាញយក iOS' : 'Download for iOS'}
+                width={150}
+                height={40}
+                className="w-auto h-12 mx-auto hover:scale-105 transition-all duration-300 cursor-pointer"
+                onClick={() => window.open('https://apps.apple.com/us/app/luyleun/id1570756469', 'luy leun')}
+              />
             </div>
             
             {/* Calculator Cards */}
@@ -121,8 +94,8 @@ export default function Home() {
                 <CardContent>
                   <p className="text-gray-600 dark:text-gray-300">
                     {language === 'km'
-                      ? 'កំណត់ជម្រើសឥណទាន និងកាលវិភាគការបង់ប្រាក់របស់អ្នក'
-                      : 'Determine your credit options and payment schedules'}
+                      ? 'គណនាពិន្ទុឥណទាន និងជម្រើសឥណទានរបស់អ្នក'
+                      : 'Calculate your credit scores and credit options'}
                   </p>
                 </CardContent>
               </Card>
