@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Moon, Sun, Languages } from "lucide-react"
+import { Moon, Sun, Languages, Home, Calculator, CreditCard } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "@/src/components/ui/button"
 import { useTranslation } from "@/src/contexts/translation-context"
 
@@ -11,16 +13,23 @@ export function Header() {
   const { setTheme, theme } = useTheme()
   const { language, setLanguage } = useTranslation()
   const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  const navItems = [
+    { href: "/", label: language === 'km' ? 'ទំព័រដើម' : 'Home', icon: Home },
+    { href: "/loan-calculator", label: language === 'km' ? 'គណនាកម្ចី' : 'Loan Calculator', icon: Calculator },
+    { href: "/credit-calculator", label: language === 'km' ? 'ឥណទានបុគ្គល' : 'Credit Calculator', icon: CreditCard },
+  ]
+
   return (
-    <header className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
       {/* Company Logo */}
-      <div className="flex items-start gap-0">
-        <div className="relative rounded-lg w-50 h-13 m-0 p-0">
+      <Link href="/" className="flex items-center">
+        <div className="relative h-16 w-60 md:h-12 md:w-48 ">
           <Image
             src={mounted && theme === 'dark' ? '/logo-kh-dark-mode.png' : '/logo-kh-light-mode.png'}
             alt="Luy Leun Logo"
@@ -28,12 +37,33 @@ export function Header() {
             className="object-contain"
             priority
             onError={(e) => {
-              // Fallback to light mode logo if dark mode logo fails
-              e.currentTarget.src = '/logo-kh-light-mode.png';
+              e.currentTarget.src = '/logo-kh-light-mode.png'
             }}
           />
         </div>
-      </div>
+      </Link>
+
+      {/* Navigation Menu */}
+      <nav className="hidden md:flex items-center gap-4">
+        {navItems.map((item) => {
+          const Icon = item.icon
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
       
       <div className="flex items-center gap-2">
         {/* Language Toggle */}

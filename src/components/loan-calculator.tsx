@@ -57,10 +57,10 @@ export default function LoanCalculator() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background scrollbar-hide overflow-y-auto">
       <Header />
-      <div className="min-h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-900 p-4 scrollbar-hide">
+        <div className="max-w-6xl mx-auto scrollbar-hide">
           <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white">{t('card.loanInfo')}</h1>
           
           {/* Top Row - Two Cards Side by Side */}

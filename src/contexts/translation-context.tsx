@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, ReactNode, useContext, useState } from 'react'
 
 type Language = 'km' | 'en'
 
@@ -12,6 +12,12 @@ interface TranslationContextType {
 
 const translations = {
   km: {
+
+    //page
+    "page.wellcome": "ស្វាគមន៍មកកាន់​​​ សេវាឥណទានឌីជីថល​​លុយលឿន!",
+    "page.tagline": "លុយលឿន - កន្លែងដែលធ្វើឱ្យឥណទានរបស់អ្នកកាន់តែប្រសើរឡើង",
+    "page.description": "លុយលឿនគឺជាវេទិកាឥណទានឌីជីថលដែលផ្តល់ជូននូវជម្រើសហិរញ្ញវត្ថុដែលលោកអ្នកអាចចូលដំណើរការបានយ៉ាងងាយស្រួល",
+
     // Form Labels
     'form.loanAmount': 'ទំហំសាច់ប្រាក់កម្ចី',
     'form.curency': 'ដុល្លារ',
@@ -54,6 +60,10 @@ const translations = {
     'range.months': 'ខែ',
   },
   en: {
+    //page
+    "page.wellcome": "Welcome to Luy Leun Digital Loan Service!",
+    "page.tagline": "Luy Leun - Where Your credit growth",
+    "page.description": "Luy Leun is a digital loan platform dedicated to providing you with accessible and user-friendly financial options",
     // Form Labels
     'form.loanAmount': 'Loan Amount',
     'form.curency': '$',

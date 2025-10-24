@@ -52,7 +52,7 @@ export function generateRepaymentSchedule(
   const monthlyServiceFee = Math.round((totalServiceFeeAmount / months) * 100) / 100
   
   let totalInterest = 0
-  let totalServiceFee = totalServiceFeeAmount
+  const totalServiceFee = totalServiceFeeAmount
   let totalPenalty = 0
 
   for (let month = 1; month <= months; month++) {
