@@ -1,108 +1,62 @@
-// API service for credit risk predictions
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// src/services/creditRiskAPI.ts
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export interface CreditRiskInput {
-  person_age: number
-  person_income: number
-  person_home_ownership: string
-  person_emp_length: number
-  loan_intent: string
-  loan_grade: string
-  loan_amnt: number
-  loan_int_rate: number
-  loan_percent_income?: number
-  cb_person_default_on_file: string
-  cb_person_cred_hist_length: number
+/* ---------- Types ---------- */
+export interface ApplicantData {
+  person_age: number;
+  person_income: number;
+  person_home_ownership: string;
+  person_emp_length: number;
+  loan_intent: string;
+  loan_grade: string;
+  loan_amnt: number;
+  loan_int_rate: number;
+  loan_percent_income: number;
+  cb_person_default_on_file: string;
+  cb_person_cred_hist_length: number;
 }
 
-export interface PredictionResult {
-  predicted_risk: string
-  low_risk_probability: number
-  high_risk_probability: number
-  input_data: CreditRiskInput
+export interface CreditRiskResult {
+  Predicted_Risk: string;
+  Low_Risk_Probability: number;
+  High_Risk_Probability: number;
 }
 
-export interface BatchPredictionRequest {
-  data: CreditRiskInput[]
+/* ---------- Generic fetch wrapper ---------- */
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Server Error (${res.status}): ${text}`);
+    }
+    return (await res.json()) as T;
+  } catch (err: any) {
+    console.error("API Error:", err);
+    throw new Error("Unable to connect to the server. Please try again later.");
+  }
 }
 
-export interface BatchPredictionResult {
-  results: PredictionResult[]
-  summary: {
-    total: number
-    high_risk: number
-    low_risk: number
-  }
+/* ---------- Predict single applicant ---------- */
+export async function predictCreditRisk(
+  data: ApplicantData
+): Promise<CreditRiskResult> {
+  return apiFetch<CreditRiskResult>(`${API_URL}/predict`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
 }
 
-export class CreditRiskAPI {
-  static async predictSingle(input: CreditRiskInput): Promise<PredictionResult> {
-    const response = await fetch(`${API_BASE_URL}/predict/single`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    })
+/* ---------- Predict multiple applicants (CSV upload) ---------- */
+export async function predictCreditRiskCsv(
+  file: File
+): Promise<CreditRiskResult[]> {
+  const formData = new FormData();
+  formData.append("file", file);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    return response.json()
-  }
-
-  static async predictBatch(request: BatchPredictionRequest): Promise<BatchPredictionResult> {
-    const response = await fetch(`${API_BASE_URL}/predict/batch`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    return response.json()
-  }
-
-  static async getModels(): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/models`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    return response.json()
-  }
-
-  static async healthCheck(): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/health`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    return response.json()
-  }
-
-  static getSampleCsvUrl(): string {
-    return `${API_BASE_URL}/sample-csv`
-  }
+  return apiFetch<CreditRiskResult[]>(`${API_URL}/predict-csv`, {
+    method: "POST",
+    body: formData,
+  });
 }

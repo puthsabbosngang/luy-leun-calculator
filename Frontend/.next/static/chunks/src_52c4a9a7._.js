@@ -1154,71 +1154,46 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 "[project]/src/services/creditRiskAPI.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-// API service for credit risk predictions
+// src/services/creditRiskAPI.ts
 __turbopack_context__.s([
-    "CreditRiskAPI",
-    ()=>CreditRiskAPI
+    "API_URL",
+    ()=>API_URL,
+    "predictCreditRisk",
+    ()=>predictCreditRisk,
+    "predictCreditRiskCsv",
+    ()=>predictCreditRiskCsv
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://127.0.0.1:8000") || 'http://localhost:8000';
-class CreditRiskAPI {
-    static async predictSingle(input) {
-        const response = await fetch("".concat(API_BASE_URL, "/predict/single"), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(input)
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(()=>({}));
-            throw new Error(errorData.detail || "HTTP ".concat(response.status, ": ").concat(response.statusText));
+const API_URL = ("TURBOPACK compile-time value", "http://localhost:8000") || "http://localhost:8000";
+/* ---------- Generic fetch wrapper ---------- */ async function apiFetch(url, options) {
+    try {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error("Server Error (".concat(res.status, "): ").concat(text));
         }
-        return response.json();
+        return await res.json();
+    } catch (err) {
+        console.error("API Error:", err);
+        throw new Error("Unable to connect to the server. Please try again later.");
     }
-    static async predictBatch(request) {
-        const response = await fetch("".concat(API_BASE_URL, "/predict/batch"), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(request)
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(()=>({}));
-            throw new Error(errorData.detail || "HTTP ".concat(response.status, ": ").concat(response.statusText));
-        }
-        return response.json();
-    }
-    static async getModels() {
-        const response = await fetch("".concat(API_BASE_URL, "/models"), {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(()=>({}));
-            throw new Error(errorData.detail || "HTTP ".concat(response.status, ": ").concat(response.statusText));
-        }
-        return response.json();
-    }
-    static async healthCheck() {
-        const response = await fetch("".concat(API_BASE_URL, "/health"), {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(()=>({}));
-            throw new Error(errorData.detail || "HTTP ".concat(response.status, ": ").concat(response.statusText));
-        }
-        return response.json();
-    }
-    static getSampleCsvUrl() {
-        return "".concat(API_BASE_URL, "/sample-csv");
-    }
+}
+async function predictCreditRisk(data) {
+    return apiFetch("".concat(API_URL, "/predict"), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+}
+async function predictCreditRiskCsv(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiFetch("".concat(API_URL, "/predict-csv"), {
+        method: "POST",
+        body: formData
+    });
 }
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);

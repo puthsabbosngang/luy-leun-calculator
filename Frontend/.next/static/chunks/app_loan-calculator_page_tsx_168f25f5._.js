@@ -6,7 +6,7 @@
   "static/chunks/node_modules_date-fns_f0a1ca22._.js",
   "static/chunks/node_modules_react-day-picker_dist_esm_3ee78fab._.js",
   "static/chunks/node_modules_next_8918cfbb._.js",
-  "static/chunks/node_modules_35de873d._.js"
+  "static/chunks/node_modules_2275805b._.js"
 ],
     source: "dynamic"
 });

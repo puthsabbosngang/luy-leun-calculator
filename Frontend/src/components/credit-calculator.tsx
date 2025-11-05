@@ -1,684 +1,222 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
+import React, { useState } from "react"
 import { Button } from "@/src/components/ui/button"
-import { Input } from "@/src/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
-import { Label } from "@/src/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group"
-import { Upload, FileText, Brain, AlertTriangle, CheckCircle, BarChart3, Download } from "lucide-react"
-import { Alert, AlertDescription } from "@/src/components/ui/alert"
-import { Badge } from "@/src/components/ui/badge"
-import { Progress } from "@/src/components/ui/progress"
-import { CreditRiskAPI, type CreditRiskInput, type PredictionResult, type BatchPredictionResult } from "@/src/services/creditRiskAPI"
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
 
-const homeOwnershipOptions = ["RENT", "FRIEND", "OWNER", "PARRENT", "COMPANY", "SIBLING"]
-const loanIntentOptions = ["START BUSINESS", "EXPAND BUSINESS", "GENERAL PAYMENT", "HOME REPAIR", "LOGISTIC", "TRAVEL", "PAYMENT", "HEALTH"]
-const loanGradeOptions = ["A", "B", "C", "D", "E", "F"]
-const employmentLengthOptions = [3, 6, 12, 24, 36]
-const loanAmountOptions = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
-const interestRateOptions = [0.01, 0.05, 0.1, 0.15, 0.2]
+import { Input } from "@/src/components/ui/input"
+
+import { Progress } from "@/src/components/ui/progress"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs"
+import { Upload, BarChart3 } from "lucide-react"
+import {
+  predictCreditRisk,
+  predictCreditRiskCsv,
+  type ApplicantData,
+  type CreditRiskResult,
+} from "@/src/services/creditRiskAPI"
+
+type CreditRiskInput = ApplicantData
+type PredictionResult = CreditRiskResult
+
+interface BatchPredictionResult {
+  results: {
+    input_data: ApplicantData
+    predicted_risk: string
+    high_risk_probability: number
+    low_risk_probability: number
+  }[]
+  summary: {
+    total: number
+    high_risk: number
+    low_risk: number
+  }
+}
 
 export default function CreditCalculator() {
   const [inputMethod, setInputMethod] = useState<"manual" | "csv">("manual")
   const [formData, setFormData] = useState<CreditRiskInput>({
-    person_age: 20,
-    person_income: 250,
-    person_home_ownership: "RENT",
-    person_emp_length: 12,
-    loan_intent: "START BUSINESS",
-    loan_grade: "A",
-    loan_amnt: 100,
-    loan_int_rate: 0.05,
-    cb_person_default_on_file: "N",
-    cb_person_cred_hist_length: 2
+    age: "",
+    gender: "",
+    income: "",
+    loan_amount: "",
+    employment_status: "",
+    credit_score: "",
+    loan_purpose: "",
+    loan_term: "",
   })
-  const [csvFile, setCsvFile] = useState<File | null>(null)
-  const [csvData, setCsvData] = useState<CreditRiskInput[]>([])
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
   const [batchPrediction, setBatchPrediction] = useState<BatchPredictionResult | null>(null)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState("")
 
-  // Calculate loan percent income when loan amount or income changes
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      loan_percent_income: prev.loan_amnt / prev.person_income
-    }))
-  }, [formData.loan_amnt, formData.person_income])
-
-  const handleInputChange = (field: keyof CreditRiskInput, value: any) => {
-    setFormData(prev => {
-      // Handle numeric fields with proper validation
-      if (['person_age', 'person_income', 'person_emp_length', 'loan_amnt', 'loan_int_rate', 'cb_person_cred_hist_length'].includes(field)) {
-        const numValue = parseFloat(value)
-        return {
-          ...prev,
-          [field]: isNaN(numValue) ? 0 : numValue
-        }
-      }
-      
-      // Handle string fields
-      return {
-        ...prev,
-        [field]: value || ""
-      }
-    })
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setCsvFile(file)
-      // Parse CSV file
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const text = e.target?.result as string
-        const lines = text.split('\n')
-        const headers = lines[0].split(',').map(h => h.trim())
-        const data = lines.slice(1).filter(line => line.trim()).map(line => {
-          const values = line.split(',').map(v => v.trim())
-          const row: any = {}
-          headers.forEach((header, index) => {
-            const value = values[index]
-            // Convert numeric fields
-            if (['person_age', 'person_income', 'person_emp_length', 'loan_amnt', 'loan_int_rate', 'cb_person_cred_hist_length'].includes(header)) {
-              row[header] = parseFloat(value) || 0
-            } else {
-              row[header] = value
-            }
-          })
-          return row as CreditRiskInput
-        })
-        setCsvData(data)
-      }
-      reader.readAsText(file)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCsvFile(e.target.files[0])
     }
   }
 
-  const predictCreditRisk = async () => {
-    setLoading(true)
-    setError(null)
-    setPrediction(null)
-    setBatchPrediction(null)
-
+  const handlePredict = async () => {
     try {
+      setLoading(true)
+      setError("")
+      setPrediction(null)
+      setBatchPrediction(null)
+
       if (inputMethod === "manual") {
-        const result = await CreditRiskAPI.predictSingle(formData)
+        const result = await predictCreditRisk(formData)
         setPrediction(result)
+      } else if (csvFile) {
+        const results = await predictCreditRiskCsv(csvFile)
+
+        const summary = {
+          total: results.length,
+          high_risk: results.filter((r) => r.Predicted_Risk === "High Risk").length,
+          low_risk: results.filter((r) => r.Predicted_Risk === "Low Risk").length,
+        }
+
+        const formattedResults = results.map((r) => ({
+          input_data: formData,
+          predicted_risk: r.Predicted_Risk,
+          high_risk_probability: r.High_Risk_Probability,
+          low_risk_probability: r.Low_Risk_Probability,
+        }))
+
+        setBatchPrediction({ results: formattedResults, summary })
       } else {
-        const result = await CreditRiskAPI.predictBatch({ data: csvData })
-        setBatchPrediction(result)
+        setError("Please upload a CSV file before predicting.")
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while predicting credit risk')
+      console.error("Prediction error:", err)
+      setError("An error occurred while predicting. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
   const getRiskColor = (risk: string) => {
-    return risk === "High Risk" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
-  }
-
-  const getRiskBadgeVariant = (risk: string) => {
-    return risk === "High Risk" ? "destructive" : "default"
+    if (risk === "High Risk") return "text-red-600 font-semibold"
+    if (risk === "Low Risk") return "text-green-600 font-semibold"
+    return "text-gray-600"
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-foreground flex items-center justify-center gap-2">
-            <Brain className="h-8 w-8 text-blue-600" />
-            DLT Credit Risk Scoring
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Use this app to predict the credit risk of applicants using a trained <strong>CatBoost</strong> model.
-          </p>
-        </div>
+    <div className="max-w-5xl mx-auto space-y-8 p-6">
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            Credit Risk Prediction
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs
+            defaultValue="manual"
+            onValueChange={(v) => setInputMethod(v as "manual" | "csv")}
+            className="space-y-4"
+          >
+            <TabsList>
+              <TabsTrigger value="manual">Manual Input</TabsTrigger>
+              <TabsTrigger value="csv">CSV Upload</TabsTrigger>
+            </TabsList>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar for large screens, but stacked cards for medium and small */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
-              {/* Model Selection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="h-5 w-5" />
-                    Model Selection
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Select defaultValue="catboost">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="catboost">CatBoost</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
+            <TabsContent value="manual" className="grid grid-cols-2 gap-4">
+              {Object.keys(formData).map((key) => (
+                <Input
+                  key={key}
+                  name={key}
+                  placeholder={key.replace(/_/g, " ").toUpperCase()}
+                  value={formData[key as keyof CreditRiskInput]}
+                  onChange={handleInputChange}
+                  className="col-span-1"
+                />
+              ))}
+            </TabsContent>
 
-              {/* Input Options */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Input Options</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RadioGroup value={inputMethod} onValueChange={(value) => setInputMethod(value as "manual" | "csv")}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="manual" id="manual" />
-                      <Label htmlFor="manual">Manual Input</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="csv" id="csv" />
-                      <Label htmlFor="csv">Upload CSV</Label>
-                    </div>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
-            </div>
+            <TabsContent value="csv" className="flex flex-col items-center gap-3 border p-4 rounded-lg">
+              <Upload className="w-10 h-10 text-primary" />
+              <Input type="file" accept=".csv" onChange={handleFileChange} />
+              <p className="text-sm text-gray-500">Upload a CSV file with applicant data</p>
+            </TabsContent>
+          </Tabs>
+
+          {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+
+          <div className="mt-6 flex justify-center">
+            <Button onClick={handlePredict} disabled={loading}>
+              {loading ? "Predicting..." : "Predict Risk"}
+            </Button>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {inputMethod === "manual" ? (
-              /* Manual Input Form */
-              <Card>
-                <CardHeader>
-                  <CardTitle>Enter Applicant Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Age */}
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Age</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        min={18}
-                        max={60}
-                        value={formData.person_age || ''}
-                        onChange={(e) => handleInputChange('person_age', e.target.value)}
-                      />
-                    </div>
+      {/* ✅ Single Prediction Result */}
+      {prediction && (
+        <Card className="border-l-4 border-primary shadow-md">
+          <CardHeader>
+            <CardTitle>Prediction Result</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-lg">
+              Predicted Risk:{" "}
+              <span className={getRiskColor(prediction.Predicted_Risk)}>
+                {prediction.Predicted_Risk}
+              </span>
+            </p>
+            <div className="space-y-1">
+              <p>
+                High Risk Probability:{" "}
+                <strong>{(prediction.High_Risk_Probability * 100).toFixed(2)}%</strong>
+              </p>
+              <Progress value={prediction.High_Risk_Probability * 100} />
+            </div>
+            <div className="space-y-1">
+              <p>
+                Low Risk Probability:{" "}
+                <strong>{(prediction.Low_Risk_Probability * 100).toFixed(2)}%</strong>
+              </p>
+              <Progress value={prediction.Low_Risk_Probability * 100} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                    {/* Income */}
-                    <div className="space-y-2">
-                      <Label htmlFor="income">Annual Income ($)</Label>
-                      <Input
-                        id="income"
-                        type="number"
-                        min={50}
-                        value={formData.person_income || ''}
-                        onChange={(e) => handleInputChange('person_income', e.target.value)}
-                      />
-                    </div>
-
-                    {/* Home Ownership */}
-                    <div className="space-y-2">
-                      <Label htmlFor="home-ownership">Home Ownership</Label>
-                      <Select
-                        value={formData.person_home_ownership}
-                        onValueChange={(value) => handleInputChange('person_home_ownership', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {homeOwnershipOptions.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Employment Length */}
-                    <div className="space-y-2">
-                      <Label htmlFor="employment">Employment Length (Months)</Label>
-                      <Select
-                        value={formData.person_emp_length.toString()}
-                        onValueChange={(value) => handleInputChange('person_emp_length', parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {employmentLengthOptions.map(option => (
-                            <SelectItem key={option} value={option.toString()}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Loan Intent */}
-                    <div className="space-y-2">
-                      <Label htmlFor="loan-intent">Loan Intent</Label>
-                      <Select
-                        value={formData.loan_intent}
-                        onValueChange={(value) => handleInputChange('loan_intent', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {loanIntentOptions.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Loan Grade */}
-                    <div className="space-y-2">
-                      <Label htmlFor="loan-grade">Loan Grade</Label>
-                      <Select
-                        value={formData.loan_grade}
-                        onValueChange={(value) => handleInputChange('loan_grade', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {loanGradeOptions.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Loan Amount */}
-                    <div className="space-y-2">
-                      <Label htmlFor="loan-amount">Loan Amount ($)</Label>
-                      <Select
-                        value={formData.loan_amnt.toString()}
-                        onValueChange={(value) => handleInputChange('loan_amnt', parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {loanAmountOptions.map(option => (
-                            <SelectItem key={option} value={option.toString()}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Interest Rate */}
-                    <div className="space-y-2">
-                      <Label htmlFor="interest-rate">Loan Interest (%)</Label>
-                      <Select
-                        value={formData.loan_int_rate.toString()}
-                        onValueChange={(value) => handleInputChange('loan_int_rate', parseFloat(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {interestRateOptions.map(option => (
-                            <SelectItem key={option} value={option.toString()}>{(option * 100).toFixed(0)}%</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Default History */}
-                    <div className="space-y-2">
-                      <Label htmlFor="default">Default History</Label>
-                      <Select
-                        value={formData.cb_person_default_on_file}
-                        onValueChange={(value) => handleInputChange('cb_person_default_on_file', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Y">Yes</SelectItem>
-                          <SelectItem value="N">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Credit History Length */}
-                    <div className="space-y-2">
-                      <Label htmlFor="credit-history">Credit History Length (years)</Label>
-                      <Input
-                        id="credit-history"
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={formData.cb_person_cred_hist_length || ''}
-                        onChange={(e) => handleInputChange('cb_person_cred_hist_length', e.target.value)}
-                      />
-                    </div>
-
-                    {/* Calculated Loan Percent Income */}
-                    <div className="space-y-2">
-                      <Label>Loan % of Income</Label>
-                      <div className="p-2 bg-muted rounded-md">
-                        {formData.person_income > 0 
-                          ? ((formData.loan_amnt / formData.person_income) * 100).toFixed(1) + '%'
-                          : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              /* CSV Upload */
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Upload className="h-5 w-5" />
-                    Upload CSV File
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <Label htmlFor="csv-upload" className="cursor-pointer">
-                      <span className="text-lg font-medium">Choose CSV file</span>
-                      <br />
-                      <span className="text-sm text-muted-foreground">or drag and drop</span>
-                    </Label>
-                    <Input
-                      id="csv-upload"
-                      type="file"
-                      accept=".csv"
-                      onChange={handleCsvUpload}
-                      className="hidden"
-                    />
-                    <div className="mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(CreditRiskAPI.getSampleCsvUrl(), '_blank')}
-                        className="flex items-center gap-2"
-                      >
-                        <Download className="h-4 w-4" />
-                        Download Sample CSV
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {csvFile && (
-                    <div className="p-4 bg-muted rounded-lg">
-                      <p className="font-medium">File: {csvFile.name}</p>
-                      <p className="text-sm text-muted-foreground">Records: {csvData.length}</p>
-                    </div>
-                  )}
-
-                  {csvData.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Data Preview</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Age</TableHead>
-                              <TableHead>Income</TableHead>
-                              <TableHead>Home Ownership</TableHead>
-                              <TableHead>Loan Amount</TableHead>
-                              <TableHead>Interest Rate</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {csvData.slice(0, 5).map((row, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{row.person_age}</TableCell>
-                                <TableCell>${row.person_income}</TableCell>
-                                <TableCell>{row.person_home_ownership}</TableCell>
-                                <TableCell>${row.loan_amnt}</TableCell>
-                                <TableCell>{(row.loan_int_rate * 100).toFixed(1)}%</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        {csvData.length > 5 && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Showing 5 of {csvData.length} records
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Input Data Display */}
-            {inputMethod === "manual" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Input Data</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Field</TableHead>
-                        <TableHead>Value</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Age</TableCell>
-                        <TableCell>{formData.person_age}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Income</TableCell>
-                        <TableCell>${formData.person_income}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Home Ownership</TableCell>
-                        <TableCell>{formData.person_home_ownership}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Employment Length</TableCell>
-                        <TableCell>{formData.person_emp_length} months</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Loan Intent</TableCell>
-                        <TableCell>{formData.loan_intent}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Loan Grade</TableCell>
-                        <TableCell>{formData.loan_grade}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Loan Amount</TableCell>
-                        <TableCell>${formData.loan_amnt}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Interest Rate</TableCell>
-                        <TableCell>{(formData.loan_int_rate * 100).toFixed(1)}%</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Loan % of Income</TableCell>
-                        <TableCell>{((formData.loan_amnt / formData.person_income) * 100).toFixed(1)}%</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Default History</TableCell>
-                        <TableCell>{formData.cb_person_default_on_file === "Y" ? "Yes" : "No"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Credit History Length</TableCell>
-                        <TableCell>{formData.cb_person_cred_hist_length} years</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Predict Button */}
-            <div className="flex justify-center">
-              <Button 
-                onClick={predictCreditRisk} 
-                disabled={loading || (inputMethod === "csv" && csvData.length === 0)}
-                size="lg"
-                className="w-full max-w-md"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Predicting...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-5 w-5 mr-2" />
-                    🔮 Predict Credit Risk
-                  </>
-                )}
-              </Button>
+      {/* ✅ Batch Prediction Result */}
+      {batchPrediction && (
+        <Card className="shadow-md border-l-4 border-blue-500">
+          <CardHeader>
+            <CardTitle>Batch Prediction Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 mb-4">
+              <p>Total Applicants: <strong>{batchPrediction.summary.total}</strong></p>
+              <p className="text-green-600">
+                Low Risk: <strong>{batchPrediction.summary.low_risk}</strong>
+              </p>
+              <p className="text-red-600">
+                High Risk: <strong>{batchPrediction.summary.high_risk}</strong>
+              </p>
             </div>
 
-            {/* Error Display */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Single Prediction Results */}
-            {prediction && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    Prediction Complete ✅
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center space-y-4">
-                    <div className="text-2xl font-bold">
-                      🧠 Prediction Result:{" "}
-                      <span className={getRiskColor(prediction.predicted_risk)}>
-                        {prediction.predicted_risk}
-                      </span>
-                    </div>
-                    <div className="text-lg">
-                      High Risk Probability: <strong>{(prediction.high_risk_probability * 100).toFixed(1)}%</strong>
-                    </div>
-                    <div className="w-full max-w-md mx-auto">
-                      <Progress 
-                        value={prediction.high_risk_probability * 100} 
-                        className="h-4"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Batch Prediction Results */}
-            {batchPrediction && (
-              <div className="space-y-6">
-                {/* Results Table */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      📋 Prediction Results
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Age</TableHead>
-                          <TableHead>Income</TableHead>
-                          <TableHead>Loan Amount</TableHead>
-                          <TableHead>Predicted Risk</TableHead>
-                          <TableHead>High Risk %</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {batchPrediction.results.map((result, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{result.input_data.person_age}</TableCell>
-                            <TableCell>${result.input_data.person_income}</TableCell>
-                            <TableCell>${result.input_data.loan_amnt}</TableCell>
-                            <TableCell>
-                              <Badge variant={getRiskBadgeVariant(result.predicted_risk)}>
-                                {result.predicted_risk}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{(result.high_risk_probability * 100).toFixed(1)}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-
-                {/* Summary Report */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      📊 Summary Report
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold">{batchPrediction.summary.total}</div>
-                        <div className="text-sm text-muted-foreground">Total Applicants</div>
-                      </div>
-                      <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-red-600">{batchPrediction.summary.high_risk}</div>
-                        <div className="text-sm text-red-600">🟥 High Risk</div>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{batchPrediction.summary.low_risk}</div>
-                        <div className="text-sm text-green-600">🟩 Low Risk</div>
-                      </div>
-                    </div>
-
-                    {/* Risk Distribution Chart */}
-                    <div className="w-full max-w-md mx-auto">
-                      <div className="text-center mb-4 font-medium">Credit Risk Distribution</div>
-                      <div className="flex h-8 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-green-500 flex items-center justify-center text-white text-sm font-medium"
-                          style={{ width: `${(batchPrediction.summary.low_risk / batchPrediction.summary.total) * 100}%` }}
-                        >
-                          {batchPrediction.summary.low_risk > 0 && "Low Risk"}
-                        </div>
-                        <div 
-                          className="bg-red-500 flex items-center justify-center text-white text-sm font-medium"
-                          style={{ width: `${(batchPrediction.summary.high_risk / batchPrediction.summary.total) * 100}%` }}
-                        >
-                          {batchPrediction.summary.high_risk > 0 && "High Risk"}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center py-8 border-t">
-          <p className="text-muted-foreground">
-            Developed with ❤️ using Next.js, TypeScript, and <strong>CatBoost</strong>
-          </p>
-        </div>
-      </div>
+            <div className="border-t pt-3 space-y-2">
+              {batchPrediction.results.map((r, idx) => (
+                <div key={idx} className="p-3 border rounded-lg flex justify-between items-center">
+                  <span>Applicant #{idx + 1}</span>
+                  <span className={getRiskColor(r.predicted_risk)}>
+                    {r.predicted_risk}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
