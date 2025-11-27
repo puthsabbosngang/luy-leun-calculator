@@ -18,13 +18,15 @@ interface DatePickerProps {
   onDateChange?: (date: Date | undefined) => void
   placeholder?: string
   className?: string
+  disabled? : (date: Date | undefined) => boolean
 }
 
 export function DatePicker({
   date,
   onDateChange,
   placeholder = "Pick a date",
-  className
+  className,
+  disabled
 }: DatePickerProps) {
   return (
     <Popover>
@@ -46,7 +48,7 @@ export function DatePicker({
           mode="single"
           selected={date}
           onSelect={onDateChange}
-          initialFocus
+          disabled = {disabled}
         />
       </PopoverContent>
     </Popover>

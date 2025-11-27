@@ -508,10 +508,6 @@ function Calendar(param) {
             formatMonthDropdown: (date)=>date.toLocaleString("default", {
                     month: "short"
                 }),
-            formatCaption: (date)=>date.toLocaleString("default", {
-                    month: "short",
-                    year: "numeric"
-                }),
             ...formatters
         },
         classNames: {
@@ -536,7 +532,7 @@ function Calendar(param) {
             week: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex w-full mt-2", defaultClassNames.week),
             week_number_header: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("select-none w-(--cell-size)", defaultClassNames.week_number_header),
             week_number: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("text-[0.8rem] select-none text-muted-foreground", defaultClassNames.week_number),
-            day: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("relative w-full h-full p-0 text-center [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md group/day aspect-square select-none", defaultClassNames.day),
+            day: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("relative w-full h-full p-0 text-center [&:last-child[data-selected=true]_button]:rounded-r-md group/day aspect-square select-none", props.showWeekNumber ? "[&:nth-child(2)[data-selected=true]_button]:rounded-l-md" : "[&:first-child[data-selected=true]_button]:rounded-l-md", defaultClassNames.day),
             range_start: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("rounded-l-md bg-accent", defaultClassNames.range_start),
             range_middle: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("rounded-none", defaultClassNames.range_middle),
             range_end: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("rounded-r-md bg-accent", defaultClassNames.range_end),
@@ -556,7 +552,7 @@ function Calendar(param) {
                     ...props
                 }, void 0, false, {
                     fileName: "[project]/src/components/ui/calendar.tsx",
-                    lineNumber: 132,
+                    lineNumber: 133,
                     columnNumber: 13
                 }, void 0);
             },
@@ -568,7 +564,7 @@ function Calendar(param) {
                         ...props
                     }, void 0, false, {
                         fileName: "[project]/src/components/ui/calendar.tsx",
-                        lineNumber: 143,
+                        lineNumber: 144,
                         columnNumber: 15
                     }, void 0);
                 }
@@ -578,7 +574,7 @@ function Calendar(param) {
                         ...props
                     }, void 0, false, {
                         fileName: "[project]/src/components/ui/calendar.tsx",
-                        lineNumber: 149,
+                        lineNumber: 150,
                         columnNumber: 15
                     }, void 0);
                 }
@@ -587,7 +583,7 @@ function Calendar(param) {
                     ...props
                 }, void 0, false, {
                     fileName: "[project]/src/components/ui/calendar.tsx",
-                    lineNumber: 157,
+                    lineNumber: 158,
                     columnNumber: 13
                 }, void 0);
             },
@@ -601,12 +597,12 @@ function Calendar(param) {
                         children: children
                     }, void 0, false, {
                         fileName: "[project]/src/components/ui/calendar.tsx",
-                        lineNumber: 164,
+                        lineNumber: 165,
                         columnNumber: 15
                     }, void 0)
                 }, void 0, false, {
                     fileName: "[project]/src/components/ui/calendar.tsx",
-                    lineNumber: 163,
+                    lineNumber: 164,
                     columnNumber: 13
                 }, void 0);
             },
@@ -646,7 +642,7 @@ function CalendarDayButton(param) {
         ...props
     }, void 0, false, {
         fileName: "[project]/src/components/ui/calendar.tsx",
-        lineNumber: 191,
+        lineNumber: 192,
         columnNumber: 5
     }, this);
 }
@@ -770,7 +766,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$p
 ;
 ;
 function DatePicker(param) {
-    let { date, onDateChange, placeholder = "Pick a date", className } = param;
+    let { date, onDateChange, placeholder = "Pick a date", className, disabled } = param;
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$popover$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Popover"], {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$popover$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PopoverTrigger"], {
@@ -783,25 +779,25 @@ function DatePicker(param) {
                             className: "mr-2 h-4 w-4"
                         }, void 0, false, {
                             fileName: "[project]/src/components/ui/date-picker.tsx",
-                            lineNumber: 40,
+                            lineNumber: 42,
                             columnNumber: 11
                         }, this),
                         date ? (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$format$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["format"])(date, "MMM dd, yyyy") : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                             children: placeholder
                         }, void 0, false, {
                             fileName: "[project]/src/components/ui/date-picker.tsx",
-                            lineNumber: 41,
+                            lineNumber: 43,
                             columnNumber: 50
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/ui/date-picker.tsx",
-                    lineNumber: 32,
+                    lineNumber: 34,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/ui/date-picker.tsx",
-                lineNumber: 31,
+                lineNumber: 33,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$popover$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PopoverContent"], {
@@ -810,21 +806,21 @@ function DatePicker(param) {
                     mode: "single",
                     selected: date,
                     onSelect: onDateChange,
-                    initialFocus: true
+                    disabled: disabled
                 }, void 0, false, {
                     fileName: "[project]/src/components/ui/date-picker.tsx",
-                    lineNumber: 45,
+                    lineNumber: 47,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/ui/date-picker.tsx",
-                lineNumber: 44,
+                lineNumber: 46,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/ui/date-picker.tsx",
-        lineNumber: 30,
+        lineNumber: 32,
         columnNumber: 5
     }, this);
 }

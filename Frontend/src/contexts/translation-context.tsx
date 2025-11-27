@@ -29,6 +29,13 @@ const translations = {
     'form.months': 'ខែ',
     'form.paidMonth': 'ខែទី',
     'form.percent': '%',
+    'form.calculationMethod': "វិធីសាស្រ្តគណនា",
+    'form.equalPayment': "ការបង់ប្រាក់ស្មើគ្នា",
+    'form.highPaymentEarly': "បង់ប្រាក់ច្រើនដំបូង",
+    'form.lowPaymentEarly': "បង់ប្រាក់តិចដំបូង",
+    'form.highInterestEarly': "ការប្រាក់ខ្ពស់ដំបូង",
+    'form.highPrincipalEarly': "ប្រាក់ដើមខ្ពស់ដំបូង",
+
     
     // Card Titles
     'card.loanInfo': 'ព័ត៌មានកម្ចី',
@@ -77,6 +84,12 @@ const translations = {
     'form.months': 'months',
     'form.paidMonth': 'Month',
     'form.percent': '%',
+    'form.calculationMethod': "Calculation Method",
+    'form.equalPayment': "Equal Payment",
+    'form.highPaymentEarly': "High Payment Early",
+    'form.lowPaymentEarly': "Low Payment Early",
+    'form.highInterestEarly': "High Interest Early",
+    'form.highPrincipalEarly': "High Principal Early",
     
     // Card Titles
     'card.loanInfo': 'Loan Information',

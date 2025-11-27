@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 14, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///D:/Projection/SE/luy-leun-calculator/Frontend/app/loan-calculator/page.tsx"],"sourcesContent":["import LoanCalculator from \"@/src/components/loan-calculator\"\r\n\r\nexport default function LoanCalculatorPage() {\r\n  return <LoanCalculator />\r\n}"],"names":[],"mappings":";;;;;AAAA;;;AAEe,SAAS;IACtB,qBAAO,8OAAC,mJAAc;;;;;AACxB","debugId":null}}]
+}

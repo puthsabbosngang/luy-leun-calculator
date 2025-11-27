@@ -1,5 +1,4 @@
 {
-  "/credit-calculator/page": "app/credit-calculator/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/loan-calculator/page": "app/loan-calculator/page.js",
   "/page": "app/page.js"

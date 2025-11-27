@@ -1,62 +1,39 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
 import { Button } from "@/src/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
 import { Slider } from "@/src/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
 import { DatePicker } from "@/src/components/ui/date-picker"
 import { useTranslation } from "@/src/contexts/translation-context"
 import { Header } from "@/src/components/header"
-import { calculateRepayment, type RepaymentResult } from "@/src/utils/loan-calculations"
+import { repaymentSchedule, type ScheduleRow } from "../utils/loan-calculations"  
 
 export default function LoanCalculator() {
   const { t, language } = useTranslation()
-  const [principal, setPrincipal] = useState(100)
-  const [months, setMonths] = useState(1)
-  const [rate, setRate] = useState(5.0)
-  const [serviceFee, setServiceFee] = useState(1.0)
+  const [principal, setPrincipal] = useState(500)
+  const [months, setMonths] = useState(3)
+  const [rate, setRate] = useState(5)
   
   // Use a static date to avoid hydration mismatch
-  const [depositDate, setDepositDate] = useState<Date>(new Date(2025, 10, 5)) // Nov 5, 2025
-  const [paidDates, setPaidDates] = useState<Date[]>([new Date(2025, 10, 5)]) // Start with one static date
-  const [repaymentData, setRepaymentData] = useState<RepaymentResult | null>(null)
-  const [mounted, setMounted] = useState(false)
+  const [depositDate, setDepositDate] = useState<Date | undefined>(new Date())
+  const [repaymentData, setRepaymentData] = useState<{
+    schedule: ScheduleRow[],
+    totalInterest: number,
+    totalPayment: number
+  } | null>(null)
 
-  useEffect(() => {
-    // Set current date only on client side to avoid hydration mismatch
-    const currentDate = depositDate
-    setDepositDate(currentDate)
-    setPaidDates([currentDate])
-    setMounted(true)
-  }, [])
-
-  const updatePaidDate = (monthIndex: number, date: Date | undefined) => {
-    if (!date) return
-    const updatedDates = [...paidDates]
-    updatedDates[monthIndex] = date
-    setPaidDates(updatedDates)
-  }
-
+  const [calculateOption, setCalculateOption] = useState('equal_payment')
   const handleCalculate = () => {
-    const days = months * 30
-    // Ensure we have enough paid dates for each month
-    const updatedPaidDates = [...paidDates]
-    const currentDate = depositDate // Use depositDate instead of depositDate
-    
-    // Add missing dates if we don't have enough
-    while (updatedPaidDates.length < months) {
-      updatedPaidDates.push(currentDate)
+    if (!depositDate){
+      setDepositDate(new Date())
+      return
     }
-    
-    // Update state with correct number of dates
-    setPaidDates(updatedPaidDates.slice(0, months))
-    
     // Convert dates to strings for calculation function
     const depositDateString = depositDate.toISOString().split('T')[0]
-    const paidDatesStrings = updatedPaidDates.slice(0, months).map(date => date.toISOString().split('T')[0])
-    
-    const result = calculateRepayment(principal, days, rate, serviceFee, depositDateString, paidDatesStrings)
+    const result = repaymentSchedule(principal, rate/100 , months, depositDateString, calculateOption)
     setRepaymentData(result)
   }
 
@@ -68,13 +45,14 @@ export default function LoanCalculator() {
           <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white">{t('card.loanInfo')}</h1>
           
           {/* Top Row - Two Cards Side by Side */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid lg:grid-cols-1 gap-6 mb-6 ms-auto me-auto">
             {/* Left Card - Loan Information */}
             <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="text-gray-900 dark:text-white">{t('form.loanSettings')}</CardTitle>
-              </CardHeader>
+              </CardHeader>  
               <CardContent className="space-y-6">
+
                 {/* Loan Amount Slider */}
                 <div>
                   <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
@@ -83,14 +61,14 @@ export default function LoanCalculator() {
                   <Slider
                     value={[principal]}
                     onValueChange={(value) => setPrincipal(value[0])}
-                    max={1000}
-                    min={50}
-                    step={50}
+                    max={10000}
+                    min={100}
+                    step={100}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>{language === 'km' ? `500 ${t('form.curency')}` : `$500`}</span>
-                    <span>{language === 'km' ? `1000 ${t('form.curency')}` : `$1000`}</span>
+                    <span>{language === 'km' ? `100 ${t('form.curency')}` : `100`}</span>
+                    <span>{language === 'km' ? `10000 ${t('form.curency')}` : `$10000`}</span>
                   </div>
                 </div>
 
@@ -102,14 +80,14 @@ export default function LoanCalculator() {
                   <Slider
                     value={[months]}
                     onValueChange={(value) => setMonths(value[0])}
-                    max={4}
+                    max={24}
                     min={1}
                     step={1}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                     <span>1 {months === 1 ? t('range.month') : t('range.months')}</span>
-                    <span>4 {t('range.months')}</span>
+                    <span>24 {t('range.months')}</span>
                   </div>
                 </div>
 
@@ -121,208 +99,64 @@ export default function LoanCalculator() {
                   <Slider
                     value={[rate]}
                     onValueChange={(value) => setRate(value[0])}
-                    max={1.5}
-                    min={0.1}
-                    step={0.1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0.1{t('form.percent')}</span>
-                    <span>1.5{t('form.percent')}</span>
-                  </div>
-                </div>
 
-                {/* Service Fee Slider */}
-                <div>
-                  <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
-                    Service Fee: <span className="font-bold text-purple-600">{serviceFee}{t('form.percent')}</span>
-                  </label>
-                  <Slider
-                    value={[serviceFee]}
-                    onValueChange={(value) => setServiceFee(value[0])}
+
                     max={25}
-                    min={0.5}
+                    min={1}
                     step={0.5}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0.5 {t('form.percent')}</span>
+                    <span>1{t('form.percent')}</span>
                     <span>25{t('form.percent')}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex items-center space-x-6">
+                  {/* Deposit Date Input */}
+                  <div className="flex flex-col ">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('form.depositDate')}:
+                    </label>
+                    <DatePicker
+                      date={depositDate}
+                      onDateChange={setDepositDate}
+                      placeholder={t('form.depositDate')}
+                      className="w-135"
+                      disabled = {(date) => {
+                        if (!date) return false;
+                        const today = new Date();
+                        today.setHours(0,0,0,0);
+                        const dateTocompare = new Date(date);
+                        dateTocompare.setHours(0,0,0,0);
+                        return dateTocompare < today;
+                      }}
+                    />
+                  </div>
 
-            {/* Right Card - Date Settings */}
-            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-gray-900 dark:text-white">{t('form.dateSettings')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Deposit Date Input */}
-                <div className="flex items-center space-x-3">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-fit ">
-                    {t('form.depositDate')}:
-                  </label>
-                  <DatePicker
-                    date={depositDate}
-                    onDateChange={(date) => date && setDepositDate(date)}
-                    placeholder={t('form.depositDate')}
-                    className="flex-0 justify-center"
-                  />
-                </div>
-
-                {/* Paid Date Inputs - One for each month */}
-                <div>
-                  <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
-                    {t('form.paidDate')} {months > 1 ? `(${months} ${t('form.months')})` : ''}
-                  </label>
-                  <div className={`${months <= 2 ? 'grid grid-cols-2 gap-x-8 gap-y-3' : 'grid grid-cols-2 gap-x-8 gap-y-3'}`}>
-                    {months === 1 && (
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                          {t('form.paidMonth')} 1:
-                        </span>
-                        <DatePicker
-                          date={paidDates[0] || depositDate}
-                          onDateChange={(date) => updatePaidDate(0, date)}
-                          placeholder={`${t('form.paidMonth')} 1`}
-                          className="flex-1"
-                        />
-                      </div>
-                    )}
-                    
-                    {months === 2 && (
-                      <>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 1:
-                          </span>
-                          <DatePicker
-                            date={paidDates[0] || depositDate}
-                            onDateChange={(date) => updatePaidDate(0, date)}
-                            placeholder={`${t('form.paidMonth')} 1`}
-                            className="flex-1"
-                          />
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 3:
-                          </span>
-                          <DatePicker
-                            date={paidDates[2] || depositDate}
-                            onDateChange={(date) => updatePaidDate(2, date)}
-                            placeholder={`${t('form.paidMonth')} 3`}
-                            className="flex-1"
-                          />
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 2:
-                          </span>
-                          <DatePicker
-                            date={paidDates[1] || depositDate}
-                            onDateChange={(date) => updatePaidDate(1, date)}
-                            placeholder={`${t('form.paidMonth')} 2`}
-                            className="flex-1"
-                          />
-                        </div>
-                      </>
-                    )}
-                    
-                    {months === 3 && (
-                      <>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 1:
-                          </span>
-                          <DatePicker
-                            date={paidDates[0] || depositDate}
-                            onDateChange={(date) => updatePaidDate(0, date)}
-                            placeholder={`${t('form.paidMonth')} 1`}
-                            className="flex-1"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 3:
-                          </span>
-                          <DatePicker
-                            date={paidDates[2] || depositDate}
-                            onDateChange={(date) => updatePaidDate(2, date)}
-                            placeholder={`${t('form.paidMonth')} 3`}
-                            className="flex-1"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 2:
-                          </span>
-                          <DatePicker
-                            date={paidDates[1] || depositDate}
-                            onDateChange={(date) => updatePaidDate(1, date)}
-                            placeholder={`${t('form.paidMonth')} 2`}
-                            className="flex-1"
-                          />
-                        </div>
-                      </>
-                    )}
-                    
-                    {months === 4 && (
-                      <>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 1:
-                          </span>
-                          <DatePicker
-                            date={paidDates[0] || depositDate}
-                            onDateChange={(date) => updatePaidDate(0, date)}
-                            placeholder={`${t('form.paidMonth')} 1`}
-                            className="flex-1"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 3:
-                          </span>
-                          <DatePicker
-                            date={paidDates[2] || depositDate}
-                            onDateChange={(date) => updatePaidDate(2, date)}
-                            placeholder={`${t('form.paidMonth')} 3`}
-                            className="flex-1"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 2:
-                          </span>
-                          <DatePicker
-                            date={paidDates[1] || depositDate}
-                            onDateChange={(date) => updatePaidDate(1, date)}
-                            placeholder={`${t('form.paidMonth')} 2`}
-                            className="flex-1"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 w-16">
-                            {t('form.paidMonth')} 4:
-                          </span>
-                          <DatePicker
-                            date={paidDates[3] || depositDate}
-                            onDateChange={(date) => updatePaidDate(3, date)}
-                            placeholder={`${t('form.paidMonth')} 4`}
-                            className="flex-1"
-                          />
-                        </div>
-                      </>
-                    )}
+                  {/* Calculation Method Select */}
+                  <div className="flex flex-col flex-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('form.calculationMethod')}:
+                    </label>
+                    <Select value={calculateOption} onValueChange={(value) => setCalculateOption(value)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t('form.calculationMethod')} />
+                      </SelectTrigger>
+                      <SelectContent>{/* Changed value from 'amortization' to 'equal_payment' */}
+                        <SelectItem value="equal_payment">{t('form.equalPayment')}</SelectItem> 
+                        {/* Changed value from 'front_load' to 'high_payment_early' */}
+                        <SelectItem value="high_payment_early">{t('form.highPaymentEarly')}</SelectItem> 
+                        {/* Changed value from 'back_load' to 'low_payment_early' */}
+                        <SelectItem value="low_payment_early">{t('form.lowPaymentEarly')}</SelectItem> 
+                        {/* Changed value from 'interest_front_load' to 'high_interest_early' */}
+                        <SelectItem value="high_interest_early">{t('form.highInterestEarly')}</SelectItem> 
+                        {/* Changed value from 'principal_front_load' to 'high_principal_early' */}
+                        <SelectItem value="high_principal_early">{t('form.highPrincipalEarly')}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+
                 <div className="mt-8">
                   <Button onClick={handleCalculate} className="w-full">
                     {t('button.calculate')}
@@ -346,27 +180,19 @@ export default function LoanCalculator() {
                           <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.payment')}</TableHead>
                           <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.principal')}</TableHead>
                           <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.interest')}</TableHead>
-                          <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.serviceFee')}</TableHead>
-                          <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.penalty')}</TableHead>
-                          <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.dayLate')}</TableHead>
                           <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.balance')}</TableHead>
                           <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.dueDate')}</TableHead>
-                          <TableHead className="text-center text-gray-700 dark:text-gray-300">{t('table.paidDate')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {repaymentData.schedule.map((entry) => (
-                          <TableRow key={entry.month} className="border-gray-200 dark:border-gray-700">
-                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.month}</TableCell>
+                          <TableRow key={entry.period} className="border-gray-200 dark:border-gray-700">
+                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.period}</TableCell>
                             <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.monthlyPayment}</TableCell>
-                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.principalPayment}</TableCell>
-                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.interest}</TableCell>
-                            <TableCell className="text-center text-purple-600 dark:text-purple-400 font-semibold">{entry.serviceFee}</TableCell>
-                            <TableCell className="text-center text-red-600 dark:text-red-400 font-semibold">{entry.penalty}</TableCell>
-                            <TableCell className="text-center text-red-600 dark:text-red-400 font-semibold">{entry.dayLate}</TableCell>
-                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.remainingBalance}</TableCell>
-                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.dueDate}</TableCell>
-                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.paidDate}</TableCell>
+                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.monthlyPrincipal}</TableCell>
+                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.monthlyInterest}</TableCell>
+                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.monthlyOSB}</TableCell>
+                            <TableCell className="text-center text-gray-900 dark:text-gray-100">{entry.monthlydueDate}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -379,7 +205,7 @@ export default function LoanCalculator() {
                         <span className="font-medium">{t('summary.totalPayment')}: </span>
                         <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">${repaymentData.totalPayment.toFixed(2)}</span>
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                          (<span>{t('form.loanAmount')}: ${principal.toFixed(2)} + {t('summary.totalInterest')}: ${repaymentData.totalInterest.toFixed(2)} + {t('table.serviceFee')}: ${repaymentData.totalServiceFee.toFixed(2)} + {t('summary.totalPenalty')}: ${repaymentData.totalPenalty.toFixed(2)} </span>)
+                          (<span>{t('form.loanAmount')}: ${principal.toFixed(2)} + {t('summary.totalInterest')}: ${repaymentData.totalInterest.toFixed(2)} </span>)
                         </span>
                       </p>
                     </div>
@@ -393,3 +219,5 @@ export default function LoanCalculator() {
     </div>
   )
 }
+
+
